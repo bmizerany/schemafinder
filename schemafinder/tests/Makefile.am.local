@@ -11,3 +11,6 @@ clean-local:
 
 CLEANFILES += 		\
   $(wildcard *.out)
+
+EXTRA_DIST +=		\
+  $(TESTS)
