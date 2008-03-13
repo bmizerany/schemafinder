@@ -1,0 +1,167 @@
+--- /sw/lib/erlang/lib/mnesia-4.3.5/src/mnesia_schema.erl	2007-03-27 06:37:32.000000000 -0700
++++ mnesia_schema.erl	2008-02-10 20:06:20.000000000 -0800
+@@ -40,6 +40,7 @@
+ 	 cs2list/1,
+          del_snmp/1,
+          del_table_copy/2,
++         del_table_copies/2,
+          del_table_index/2,
+          delete_cstruct/2,
+          delete_schema/1,
+@@ -1214,6 +1215,86 @@
+ 	    end
+     end.
+ 
++del_table_copies(Tab, Ns) when is_list(Ns), Ns /= [] ->
++    schema_transaction(fun() ->
++			      do_del_table_copies(Tab, Ns)
++		       end).
++
++do_del_table_copies(Tab, Ns) ->    
++    TidTs = get_tid_ts_and_lock(schema, write),    
++    insert_schema_ops(TidTs, make_del_table_copies(Tab, Ns)).
++
++make_del_table_copies(Tab, Ns) ->
++    ensure_writable(schema),
++    Cs = incr_version(val({Tab, cstruct})),
++    NStorList = [{Node, mnesia_lib:schema_cs_to_storage_type(Node, Cs)} 
++	       || Node <- Ns ],
++    Cs2 = lists:foldl(fun({Node, Storage}, Acc) ->
++			      new_cs(Acc, Node, Storage, del)
++		      end,
++		      Cs,
++		      NStorList),
++    case mnesia_lib:cs_to_nodes(Cs2) of
++	[] when Tab == schema ->
++	    mnesia:abort({combine_error, Tab, "Last replica"});
++	[] ->
++	    ensure_active(Cs),	    
++	    dbg_out("Last replica deleted in table ~p~n", [Tab]),
++	    make_delete_table(Tab, whole_table);
++	_ when Tab == schema ->
++	    ensure_active(Cs2),
++	    lists:foreach(fun(Node) -> ensure_not_active(Tab, Node) end, Ns),
++	    verify_cstruct(Cs2),
++	    Ops = remove_nodes_from_tabs(val({schema, tables}), NStorList),
++	    [{op, del_table_copies, [{N,ram_copies} || N<-Ns], cs2list (Cs2)} | Ops];
++	_ ->
++	    ensure_active(Cs),
++	    verify_cstruct(Cs2),
++	    [{op, del_table_copies, NStorList, cs2list(Cs2)}]
++    end.
++
++remove_nodes_from_tabs([], _NStorList) ->
++    [];
++remove_nodes_from_tabs([schema|Rest], NStorList) ->
++    remove_nodes_from_tabs(Rest, NStorList);
++remove_nodes_from_tabs([Tab|Rest], NStorList) ->    
++    {Cs, IsFragModified} = 
++	lists:foldl(fun({Node, _}, {AccCs, AccIsFragModified}) ->
++			    {NewCs, NewFM} = mnesia_frag:remove_node(Node, 
++								     AccCs),
++			    {NewCs, NewFM or AccIsFragModified}
++		    end,
++		    {incr_version(val({Tab, cstruct})), false},
++		    NStorList),
++
++    case lists:any (fun ({ _, X }) -> X =/= unknown end, NStorList) of
++	false ->
++	    case IsFragModified of
++		true ->
++		    [{op, change_table_frag, {del_node, N}, cs2list(Cs)} ||
++		      {N, _} <- NStorList] ++
++		     remove_nodes_from_tabs(Rest, NStorList);
++		false ->
++		    remove_nodes_from_tabs(Rest, NStorList)
++	    end;
++	true ->
++	     Cs2 = lists:foldl(fun({_, unknown}, Acc) -> Acc;
++				  ({Node, Storage}, Acc) ->
++				    new_cs(Acc, Node, Storage, del)
++			       end,
++			       Cs,
++			       NStorList),
++	    case mnesia_lib:cs_to_nodes(Cs2) of
++		[] ->
++		    [{op, delete_table, cs2list(Cs)} |
++		     remove_nodes_from_tabs(Rest, NStorList)];
++		_Ns ->
++		    verify_cstruct(Cs2),
++		    [{op, del_table_copies, NStorList, cs2list(Cs2)}|
++		     remove_nodes_from_tabs(Rest, NStorList)]
++	    end
++    end.
++
+ new_cs(Cs, Node, ram_copies, add) ->
+     Cs#cstruct{ram_copies = opt_add(Node, Cs#cstruct.ram_copies)};
+ new_cs(Cs, Node, disc_copies, add) ->
+@@ -1865,6 +1946,29 @@
+ 	    {true, optional}
+     end;
+ 
++prepare_op(Tid, {op, del_table_copies, NStorList, TabDef}, _WaitFor) ->
++    Cs = list2cs(TabDef),
++    Tab = Cs#cstruct.name,
++    
++    if
++	%% Schema table lock is always required to run a schema op.
++	%% No need to look it.
++	node(Tid#tid.pid) == node(), Tab /= schema -> 
++	    Self = self(),
++	    Pid = spawn_link(fun() -> lock_del_table(Tab, [N || {N,_}<-NStorList], Cs, Self) end),
++	    put(mnesia_lock, Pid),
++	    receive 
++		{Pid, updated} -> 
++		    {true, optional};
++		{Pid, FailReason} ->
++		    mnesia:abort(FailReason);
++		{'EXIT', Pid, Reason} ->
++		    mnesia:abort(Reason)
++	    end;	
++	true ->
++	    {true, optional}
++    end;
++
+ prepare_op(_Tid, {op, change_table_copy_type,  N, FromS, ToS, TabDef}, _WaitFor)
+   when N == node() ->
+     Cs = list2cs(TabDef),
+@@ -2108,7 +2212,21 @@
+     unlink(whereis(mnesia_tm)),
+     exit(normal).
+ 
+-set_where_to_read(Tab, Node, Cs) ->
++set_where_to_read(Tab, NodeList, Cs) when is_list(NodeList) ->
++    case lists:member(mnesia_lib:val({Tab, where_to_read}), NodeList) of
++	true ->
++	    case Cs#cstruct.local_content of
++		true ->
++		    ok;
++		false ->
++		    mnesia_lib:set_remote_where_to_read(Tab, NodeList),
++		    ok
++	    end;
++	_ ->
++	    ok
++    end;
++
++set_where_to_read(Tab, Node, Cs) when is_atom(Node) ->
+     case mnesia_lib:val({Tab, where_to_read}) of 
+ 	Node ->
+ 	    case Cs#cstruct.local_content of
+@@ -2264,6 +2382,16 @@
+     Tab = Cs#cstruct.name,
+     mnesia_lib:set({Tab, where_to_read}, Node);
+ 
++undo_prepare_op(_Tid, {op, del_table_copies, NStorList, TabDef}) ->
++    case lists:member (node (), [N || {N,_} <- NStorList]) of
++        true ->
++            Cs = list2cs(TabDef),
++            Tab = Cs#cstruct.name,
++            mnesia_lib:set({Tab, where_to_read}, node ());
++        false ->
++            ok
++    end;
++
+ 
+ undo_prepare_op(_Tid, {op, change_table_copy_type, N, FromS, ToS, TabDef}) 
+         when N == node() ->

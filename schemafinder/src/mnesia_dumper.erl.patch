@@ -1,0 +1,19 @@
+--- /sw/lib/erlang/lib/mnesia-4.3.5/src/mnesia_dumper.erl	2007-06-11 04:31:23.000000000 -0700
++++ mnesia_dumper.erl	2008-02-10 20:04:39.000000000 -0800
+@@ -826,6 +826,16 @@
+ 	    end
+     end;
+ 
++insert_op(Tid, _, {op, del_table_copies, NStorList, TabDef}, InPlace, InitBy) ->
++    lists:foreach(fun({Node, Storage}) -> 
++			  insert_op(Tid, 
++				    void, 
++				    {op, del_table_copy, Storage, Node, TabDef},
++				    InPlace,
++				    InitBy)
++		  end,
++		  NStorList);
++
+ insert_op(Tid, _, {op, add_table_copy, _Storage, _Node, TabDef}, InPlace, InitBy) ->
+     %% During prepare commit, the files was created
+     %% and the replica was announced

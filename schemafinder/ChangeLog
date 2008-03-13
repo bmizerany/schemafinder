@@ -1,0 +1,49 @@
+Version 2.0.1
+  * include delirium
+
+Version 2.0.0
+  * schemafinder groups - not backwards compatible!
+
+Version 1.2.0
+  * don't set mnesia's data dir, it is owned by mnesia
+  * optionally allow startup when all other nodes are stopped
+
+Version 1.1.5
+  * data_dir application variable, with os:getenv (DATADIR) default
+
+Version 1.1.4
+  * build with latest fw-template-erlang (package hook fixes)
+
+Version 1.1.3
+  * package dep on combonodefinder
+  * application dep on combonodefinder
+  * set default nodefinder to combonodefinder
+  * build with new fw-template-erlang (erlrc hooks)
+
+Version 1.1.2
+  * Don't application:start/1 included applications.
+
+Version 1.1.1
+  * Change schema type to disc_copies before waiting on other nodes.
+
+Version 1.1.0
+  * Add delay after mnesia:change_config/2; it appears asynchronous.
+
+Version 1.0.3
+  * Sanctify after joining (in case of schema deletion for duplicate join).
+
+Version 1.0.2
+  * Improve interface boundary with delirium.
+  * Utilize delirium:admit/0.
+
+Version 1.0.1
+  * Fix schemafinder:stop/0 bug.
+
+Version 1.0.0
+  * Don't start nodefinder service, instead call discover method.
+  * Use delirium.
+  * Use ec2nodefinder by default.
+  * More extensive testing.
+
+Version 0.0.0
+  * Initial version.

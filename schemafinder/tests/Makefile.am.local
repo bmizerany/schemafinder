@@ -1,0 +1,13 @@
+TESTS =			\
+  test-schemafinder-fXX	\
+  test-schemafinder-tff	\
+  test-schemafinder-tft	\
+  test-schemafinder-ttf	\
+  test-schemafinder-ttt	\
+  test-disaster
+
+clean-local:
+	-rm -rf Mnesia*
+
+CLEANFILES += 		\
+  $(wildcard *.out)

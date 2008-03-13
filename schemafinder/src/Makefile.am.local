@@ -1,0 +1,39 @@
+dist_erlappsrc_DATA = 		\
+  $(wildcard *.erl)		\
+  mnesia_dumper.erl		\
+  mnesia_schema.erl
+
+dist_erlappinclude_DATA =	\
+  $(wildcard *.hrl)
+
+dist_erlapppriv_DATA =		\
+  $(wildcard *.erl.patch)
+
+erlappebin_SCRIPTS =					\
+  @FW_PACKAGE_NAME@.app					\
+  $(patsubst %.erl, %.beam, $(dist_erlappsrc_DATA))
+
+.dialyzer_ok_no_mnesia: $(filter-out mnesia%, $(wildcard *.erl))
+	dialyzer --src -c $^
+	touch $@
+
+check_DATA =			\
+  .dialyzer_ok_no_mnesia
+
+%.erl: %.erl.patch
+	@cp @MNESIALOC@/$*.erl .
+	@patch $*.erl $*.erl.patch
+
+mnesia_dumper_ERLCFLAGS =	\
+  -I @MNESIALOC@
+
+mnesia_schema_ERLCFLAGS =	\
+  -I @MNESIALOC@
+
+CLEANFILES += 			\
+  .dialyzer_ok_no_mnesia	\
+  mnesia_dumper.erl		\
+  mnesia_schema.erl
+
+EXTRA_DIST +=			\
+  .dialyzer_ok_no_mnesia

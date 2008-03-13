@@ -1,0 +1,12 @@
+@author Paul Mineiro
+@copyright 2008 N54 Inc.
+@title Mnesia Schema Finder
+@doc Schemafinder starts up the local mnesia and joins a schema defined
+at other nodes as discovered by the indicated nodefinder strategy and
+the indicated schemafinder group.   It also provides a mechanism for
+identifying and pruning mnesia nodes that are permanantly out of service.
+Finally it allows optional reuse of the mnesia directory during shutdown
+and guards against joining the global mnesia with a stale schema after
+having been removed (which, if not guarded against, leads to undefined
+behaviour).  NB: schemafinder currently includes absolutely no strategy
+for handling network partitioning.
