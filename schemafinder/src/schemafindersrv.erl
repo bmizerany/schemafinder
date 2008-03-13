@@ -15,8 +15,6 @@
            terminate/2,
            code_change/3]).
 
--define (is_bool (X), (((X) =:= true) orelse ((X) =:= false))).
-
 -record (state, {}).
 
 %-=====================================================================-
