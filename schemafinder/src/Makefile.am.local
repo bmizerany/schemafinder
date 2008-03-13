@@ -31,9 +31,5 @@ mnesia_schema_ERLCFLAGS =	\
   -I @MNESIALOC@
 
 CLEANFILES += 			\
-  .dialyzer_ok_no_mnesia	\
   mnesia_dumper.erl		\
   mnesia_schema.erl
-
-EXTRA_DIST +=			\
-  .dialyzer_ok_no_mnesia
