@@ -24,11 +24,10 @@
 start_link (MaxExtraDbDelay, Group) when is_integer (MaxExtraDbDelay),
                                          MaxExtraDbDelay > 0,
                                          is_atom (Group) ->
-  gen_server:start_link 
-    ({ local, ?MODULE }, 
-     ?MODULE,
-     [ MaxExtraDbDelay, Group ],
-     [ { timeout, 30000 + 1000 * MaxExtraDbDelay } ]).
+  gen_server:start_link ({ local, ?MODULE }, 
+                         ?MODULE,
+                         [ MaxExtraDbDelay, Group ],
+                         []).
 
 %-=====================================================================-
 %-                         gen_server callbacks                        -
