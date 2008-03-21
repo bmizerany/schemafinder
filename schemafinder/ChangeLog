@@ -1,3 +1,6 @@
+Version 2.0.3
+  * handle sancitified in deliriumsrv:expire_old_nodes/1.
+
 Version 2.0.2
   * get rid of schemafindersrv startup timeout.
 

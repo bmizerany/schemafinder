@@ -151,7 +151,8 @@ expire_old_nodes (NodeTimeout) ->
                                                             (S =:= buried) ->
                       true;
                     { X, [ #delirium{ status = Y } ] } when (X =:= infinity) or 
-                                                            (Y =:= immortal) ->
+                                                            (Y =:= immortal) or
+                                                            (Y =:= sanctified) ->
                       false;
                     { Timeout, [ #delirium{ status = Then } ] } ->
                       timer:now_diff (Now, Then) > Timeout

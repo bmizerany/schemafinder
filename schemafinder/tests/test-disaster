@@ -4,15 +4,19 @@
 # EC2 nodes out of a pool of three, with an artarded operator
 # that doesn't delete the schema directory of a stale node.
 
+pid=$$
+cook=mega$$
+
 cleanup () \
   {
-    erl -pa ../src -setcookie mega -sname killah -noshell -noinput -eval '
-      "killah@" ++ Host = atom_to_list (node ()),
-      rpc:call (list_to_atom ("flassy@" ++ Host), erlang, halt, []),
-      rpc:call (list_to_atom ("turgy@" ++ Host), erlang, halt, []),
-      rpc:call (list_to_atom ("warezy@" ++ Host), erlang, halt, []),
-      rpc:call (list_to_atom ("inviso@" ++ Host), erlang, halt, [])
-    ' -s erlang halt
+    erl -pa ../src -setcookie $cook -sname killah$pid -noshell -noinput -eval '
+      Pid = hd (init:get_plain_arguments ()),
+      Host = lists:last (string:tokens (atom_to_list (node ()), "@")),
+      rpc:call (list_to_atom ("flassy" ++ Pid ++ "@" ++ Host), erlang, halt, []),
+      rpc:call (list_to_atom ("turgy" ++ Pid ++ "@" ++ Host), erlang, halt, []),
+      rpc:call (list_to_atom ("warezy" ++ Pid ++ "@" ++ Host), erlang, halt, []),
+      rpc:call (list_to_atom ("inviso" ++ Pid ++ "@" ++ Host), erlang, halt, [])
+    ' -s erlang halt -extra $pid
 
     rm -rf Mnesia*flassy*
     rm -rf Mnesia*turgy*
@@ -20,8 +24,42 @@ cleanup () \
     rm -rf Mnesia*inviso*
   }
 
-{
+start_bg_node () \
+  {
+    erl -pa ../src -setcookie $cook -sname "$1" -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder $2 -noshell -noinput -eval '
+      true = register (hello, self ()),
+      { atomic, ok } = delirium:heartbeat (),
+      true = lists:keymember (schemafinder, 1, application:which_applications ()),
+      receive { From, ruthere } -> From ! imok end,
+      receive after infinity -> ok end
+    ' -s erlang halt &
 
+    wait_for_node "$1"
+  }
+
+wait_for_node () \
+  {
+    erl -hidden -pa ../src -setcookie $cook -sname wazzup$pid      \
+        -noshell -noinput -eval '
+      receive after 1000 -> ok end,
+      Host = lists:last (string:tokens (atom_to_list (node ()), "@")),
+      Other = hd (init:get_plain_arguments ()),
+      pong = net_adm:ping (list_to_atom (Other ++ "@" ++ Host)),
+      While = fun (F, W) -> case F () of false -> ok; 
+                                         true -> receive after 1000 -> ok end,
+                                                 W (F, W)
+                            end
+              end,
+      While (fun () -> rpc:call (list_to_atom (Other ++ "@" ++ Host), erlang, whereis, [ hello ]) =:= undefined end, While),
+      Pid = rpc:call (list_to_atom (Other ++ "@" ++ Host), erlang, whereis, [ hello ]),
+      true = erlang:is_pid (Pid),
+      MRef = erlang:monitor (process, Pid),
+      Pid ! { self (), ruthere },
+      ok = receive imok -> ok; { 'DOWN', MRef, _, _, _ } -> flass end
+    ' -s erlang halt -extra "$1" || { cleanup; exit 1; }
+  }
+
+{
 rm -rf Mnesia*flassy*
 rm -rf Mnesia*turgy*
 rm -rf Mnesia*warezy*
@@ -30,82 +68,11 @@ rm -rf Mnesia*inviso*
 # first we start three nodes and get them running the same mnesia schema
 # plus a fourth in a different group that nobodoy is supposed to see ...
 
-erl -pa ../src -setcookie mega -sname inviso -schemafinder node_finder nodefinder -s combonodefinder -schemafinder group flass -s schemafinder -noshell -noinput -eval '
-  true = register (hello, self ()),
-  { atomic, ok } = delirium:heartbeat (),
-  true = lists:keymember (schemafinder, 1, application:which_applications ()),
-  receive { From, ruthere } -> From ! imok end,
-  receive after infinity -> ok end
-' -s erlang halt &
+start_bg_node inviso$pid '-schemafinder group flass'
+start_bg_node flassy$pid
+start_bg_node turgy$pid
 
-erl -hidden -pa ../src -setcookie mega -sname wazzup -noshell -noinput -eval '
-  receive after 1000 -> ok end,
-  "wazzup@" ++ Host = atom_to_list (node ()),
-  pong = net_adm:ping (list_to_atom ("inviso@" ++ Host)),
-  While = fun (F, W) -> case F () of false -> ok; 
-                                     true -> receive after 1000 -> ok end,
-                                             W (F, W)
-                        end
-          end,
-  While (fun () -> rpc:call (list_to_atom ("inviso@" ++ Host), erlang, whereis, [ hello ]) =:= undefined end, While),
-  Pid = rpc:call (list_to_atom ("inviso@" ++ Host), erlang, whereis, [ hello ]),
-  true = erlang:is_pid (Pid),
-  MRef = erlang:monitor (process, Pid),
-  Pid ! { self (), ruthere },
-  ok = receive imok -> ok; { 'DOWN', MRef, _, _, _ } -> flass end
-' -s erlang halt || { cleanup; exit 1; }
-
-erl -pa ../src -setcookie mega -sname flassy -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
-  true = register (hello, self ()),
-  { atomic, ok } = delirium:heartbeat (),
-  true = lists:keymember (schemafinder, 1, application:which_applications ()),
-  receive { From, ruthere } -> From ! imok end,
-  receive after infinity -> ok end
-' -s erlang halt &
-
-erl -hidden -pa ../src -setcookie mega -sname wazzup -noshell -noinput -eval '
-  receive after 1000 -> ok end,
-  "wazzup@" ++ Host = atom_to_list (node ()),
-  pong = net_adm:ping (list_to_atom ("flassy@" ++ Host)),
-  While = fun (F, W) -> case F () of false -> ok; 
-                                     true -> receive after 1000 -> ok end,
-                                             W (F, W)
-                        end
-          end,
-  While (fun () -> rpc:call (list_to_atom ("flassy@" ++ Host), erlang, whereis, [ hello ]) =:= undefined end, While),
-  Pid = rpc:call (list_to_atom ("flassy@" ++ Host), erlang, whereis, [ hello ]),
-  true = erlang:is_pid (Pid),
-  MRef = erlang:monitor (process, Pid),
-  Pid ! { self (), ruthere },
-  ok = receive imok -> ok; { 'DOWN', MRef, _, _, _ } -> flass end
-' -s erlang halt || { cleanup; exit 1; }
-
-erl -pa ../src -setcookie mega -sname turgy -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
-  true = register (hello, self ()),
-  { atomic, ok } = delirium:heartbeat (),
-  true = lists:keymember (schemafinder, 1, application:which_applications ()),
-  receive { From, ruthere } -> From ! imok end,
-  receive after infinity -> ok end
-' -s erlang halt &
-
-erl -hidden -pa ../src -setcookie mega -sname wazzup -noshell -noinput -eval '
-  receive after 1000 -> ok end,
-  "wazzup@" ++ Host = atom_to_list (node ()),
-  pong = net_adm:ping (list_to_atom ("turgy@" ++ Host)),
-  While = fun (F, W) -> case F () of false -> ok; 
-                                     true -> receive after 1000 -> ok end,
-                                             W (F, W)
-                        end
-          end,
-  While (fun () -> rpc:call (list_to_atom ("turgy@" ++ Host), erlang, whereis, [ hello ]) =:= undefined end, While),
-  Pid = rpc:call (list_to_atom ("turgy@" ++ Host), erlang, whereis, [ hello ]),
-  true = erlang:is_pid (Pid),
-  MRef = erlang:monitor (process, Pid),
-  Pid ! { self (), ruthere },
-  ok = receive imok -> ok; { 'DOWN', MRef, _, _, _ } -> flass end
-' -s erlang halt || { cleanup; exit 1; }
-
-erl -pa ../src -setcookie mega -sname warezy -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
+erl -pa ../src -setcookie $cook -sname warezy$pid -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
   true = register (hello, self ()),
   { atomic, ok } = delirium:heartbeat (),
   true = lists:keymember (schemafinder, 1, application:which_applications ()),
@@ -119,54 +86,40 @@ erl -pa ../src -setcookie mega -sname warezy -schemafinder node_finder nodefinde
   receive after infinity -> ok end
 ' -s erlang halt &
 
-erl -hidden -pa ../src -setcookie mega -sname wazzup -noshell -noinput -eval '
-  receive after 1000 -> ok end,
-  "wazzup@" ++ Host = atom_to_list (node ()),
-  pong = net_adm:ping (list_to_atom ("warezy@" ++ Host)),
-  While = fun (F, W) -> case F () of false -> ok; 
-                                     true -> receive after 1000 -> ok end,
-                                             W (F, W)
-                        end
-          end,
-  While (fun () -> rpc:call (list_to_atom ("warezy@" ++ Host), erlang, whereis, [ hello ]) =:= undefined end, While),
-  Pid = rpc:call (list_to_atom ("warezy@" ++ Host), erlang, whereis, [ hello ]),
-  true = erlang:is_pid (Pid),
-  MRef = erlang:monitor (process, Pid),
-  Pid ! { self (), ruthere },
-  ok = receive imok -> ok; { 'DOWN', MRef, _, _, _ } -> flass end
-' -s erlang halt || { cleanup; exit 1; }
+wait_for_node warezy$pid
 
 # now kill flassy and turgy 
 
-erl -hidden -pa ../src -setcookie mega -sname killah -noshell -noinput -eval '
-  "killah@" ++ Host = atom_to_list (node ()),
-  rpc:call (list_to_atom ("flassy@" ++ Host), erlang, halt, []),
-  rpc:call (list_to_atom ("turgy@" ++ Host), erlang, halt, []),
-  { atomic, ok } = rpc:call (list_to_atom ("warezy@" ++ Host),
+erl -hidden -pa ../src -setcookie $cook -sname killah$pid -noshell -noinput -eval '
+  Pid = hd (init:get_plain_arguments ()),
+  Host = lists:last (string:tokens (atom_to_list (node ()), "@")),
+  rpc:call (list_to_atom ("flassy" ++ Pid ++ "@" ++ Host), erlang, halt, []),
+  rpc:call (list_to_atom ("turgy" ++ Pid ++ "@" ++ Host), erlang, halt, []),
+  { atomic, ok } = rpc:call (list_to_atom ("warezy" ++ Pid ++ "@" ++ Host),
                              delirium,
                              condemn,
-                             [ list_to_atom ("flassy@" ++ Host) ]),
-  { atomic, ok } = rpc:call (list_to_atom ("warezy@" ++ Host),
+                             [ list_to_atom ("flassy" ++ Pid ++ "@" ++ Host) ]),
+  { atomic, ok } = rpc:call (list_to_atom ("warezy" ++ Pid ++ "@" ++ Host),
                              delirium,
                              condemn,
-                             [ list_to_atom ("turgy@" ++ Host) ]),
-  { ok, Pid } = rpc:call (list_to_atom ("warezy@" ++ Host), 
-                          delirium,
-                          force_prune,
-                          []),
-  MonitorRef = erlang:monitor (process, Pid),
+                             [ list_to_atom ("turgy" ++ Pid ++ "@" ++ Host) ]),
+  { ok, Prune } = rpc:call (list_to_atom ("warezy" ++ Pid ++ "@" ++ Host), 
+                            delirium,
+                            force_prune,
+                            []),
+  MonitorRef = erlang:monitor (process, Prune),
   receive
     { 'DOWN', MonitorRef, _Type, _Object, _Info } -> ok
   end,
-  Warez = list_to_atom ("warezy@" ++ Host),
+  Warez = list_to_atom ("warezy" ++ Pid ++ "@" ++ Host),
   [ Warez ] = rpc:call (Warez, mnesia, system_info, [ db_nodes ])
-' -s erlang halt || { cleanup; exit 1; }
+' -s erlang halt -extra $pid || { cleanup; exit 1; }
 
 # now restart turgy
 
 rm -rf Mnesia*turgy*
 
-erl -pa ../src -setcookie mega -sname turgy -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
+erl -pa ../src -setcookie $cook -sname turgy$pid -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
   true = register (hello, self ()),
   { atomic, ok } = delirium:heartbeat (),
   { atomic, ok } = mnesia:add_table_copy (flass, node (), ram_copies),
@@ -175,37 +128,26 @@ erl -pa ../src -setcookie mega -sname turgy -schemafinder node_finder nodefinder
   receive after infinity -> ok end
 ' -s erlang halt &
 
-erl -hidden -pa ../src -setcookie mega -sname wazzup -noshell -noinput -eval '
-  receive after 1000 -> ok end,
-  "wazzup@" ++ Host = atom_to_list (node ()),
-  pong = net_adm:ping (list_to_atom ("turgy@" ++ Host)),
-  While = fun (F, W) -> case F () of false -> ok; 
-                                     true -> receive after 1000 -> ok end,
-                                             W (F, W)
-                        end
-          end,
-  While (fun () -> rpc:call (list_to_atom ("turgy@" ++ Host), erlang, whereis, [ hello ]) =:= undefined end, While),
-  Pid = rpc:call (list_to_atom ("turgy@" ++ Host), erlang, whereis, [ hello ]),
-  true = erlang:is_pid (Pid),
-  MRef = erlang:monitor (process, Pid),
-  Pid ! { self (), ruthere },
-  ok = receive imok -> ok; { 'DOWN', MRef, _, _, _ } -> flass end
-' -s erlang halt || { cleanup; exit 1; }
+wait_for_node turgy$pid
 
 # now restart flassy ... *without* removing it's schema directory
 
-erl -pa ../src -setcookie mega -sname flassy -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
+echo "****** the following error is expected ******"
+
+erl -pa ../src -setcookie $cook -sname flassy$pid -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
   false = lists:keymember (schemafinder, 1, application:which_applications ()),
   Node = node (),
   { aborted, { node_not_running, Node } } = 
     mnesia:add_table_copy (flass, node (), ram_copies)
 ' -s erlang halt || { cleanup; exit 1; }
 
+echo "****** subsequent errors are not expected ******"
+
 # oops, i'm an ardtard
 
 rm -rf Mnesia*flassy*
 
-erl -pa ../src -setcookie mega -sname flassy -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
+erl -pa ../src -setcookie $cook -sname flassy$pid -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
   true = register (hello, self ()),
   { atomic, ok } = delirium:heartbeat (),
   { atomic, ok } = mnesia:add_table_copy (flass, node (), ram_copies),
@@ -214,22 +156,7 @@ erl -pa ../src -setcookie mega -sname flassy -schemafinder node_finder nodefinde
   receive after infinity -> ok end
 ' -s erlang halt &
 
-erl -hidden -pa ../src -setcookie mega -sname wazzup -noshell -noinput -eval '
-  receive after 1000 -> ok end,
-  "wazzup@" ++ Host = atom_to_list (node ()),
-  pong = net_adm:ping (list_to_atom ("flassy@" ++ Host)),
-  While = fun (F, W) -> case F () of false -> ok; 
-                                     true -> receive after 1000 -> ok end,
-                                             W (F, W)
-                        end
-          end,
-  While (fun () -> rpc:call (list_to_atom ("flassy@" ++ Host), erlang, whereis, [ hello ]) =:= undefined end, While),
-  Pid = rpc:call (list_to_atom ("flassy@" ++ Host), erlang, whereis, [ hello ]),
-  true = erlang:is_pid (Pid),
-  MRef = erlang:monitor (process, Pid),
-  Pid ! { self (), ruthere },
-  ok = receive imok -> ok; { 'DOWN', MRef, _, _, _ } -> flass end
-' -s erlang halt || { cleanup; exit 1; }
+wait_for_node flassy$pid
 
 cleanup
 
