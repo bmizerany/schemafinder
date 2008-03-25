@@ -18,6 +18,8 @@
 -define (is_timeout (X), (((X) =:= infinity) or
                           (is_integer (X) andalso (X > 0)))).
 
+-oldrecord (state).
+
 -record (state, { node_timeout }).
 -record (statev2, { node_timeout, load_timeout }).
 
