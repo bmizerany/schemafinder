@@ -8,6 +8,7 @@
 %-=====================================================================-
 
 start () ->
+  combonodefinder:start (),
   application:start (schemafinder).
 
 stop () ->

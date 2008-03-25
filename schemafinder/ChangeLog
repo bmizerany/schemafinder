@@ -1,3 +1,6 @@
+Version 2.0.4
+  * follow "start/0 starts dependencies" convention.
+
 Version 2.0.3
   * handle sancitified in deliriumsrv:expire_old_nodes/1.
 
