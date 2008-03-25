@@ -16,6 +16,11 @@
            sanctify/0,
            sanctify/1 ]).
 
+-ifdef (HAVE_APPINSPECT).
+-behaviour (appinspect).
+-export ([ inspect/0 ]).
+-endif.
+
 -include ("delirium.hrl").
 
 %-=====================================================================-
@@ -188,6 +193,17 @@ sanctify (Node) ->
            mnesia:write (#delirium{ node = Node, status = sanctified })
        end
      end).
+
+-ifdef (HAVE_APPINSPECT).
+%-=====================================================================-
+%-                         appinspect callbacks                        -
+%-=====================================================================-
+
+inspect () ->
+  [ { delirium, [ mnesia:dirty_read ({ delirium, K }) || 
+                  K <- mnesia:dirty_all_keys (delirium) ] } ].
+
+-endif.
 
 %-=====================================================================-
 %-                        application callbacks                        -

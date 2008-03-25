@@ -3,6 +3,11 @@
 -behaviour (application).
 -export ([ start/2, stop/1 ]).
 
+-ifdef (HAVE_APPINSPECT).
+-behaviour (appinspect).
+-export ([ inspect/0 ]).
+-endif.
+
 %-=====================================================================-
 %-                                Public                               -
 %-=====================================================================-
@@ -13,6 +18,18 @@ start () ->
 
 stop () ->
   application:stop (schemafinder).
+
+
+-ifdef (HAVE_APPINSPECT).
+%-=====================================================================-
+%-                         appinspect callbacks                        -
+%-=====================================================================-
+
+inspect () ->
+  [ { db_nodes, mnesia:system_info (db_nodes) },
+    { running_db_nodes, mnesia:system_info (running_db_nodes) } ].
+
+-endif.
 
 %-=====================================================================-
 %-                        application callbacks                        -

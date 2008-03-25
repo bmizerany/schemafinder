@@ -2,7 +2,7 @@
 # environment variable FW_PACKAGE_DEFAULT_MAINTAINER if non-empty
 
 FW_PACKAGE_NAME="schemafinder"
-FW_PACKAGE_VERSION="2.0.4"
+FW_PACKAGE_VERSION="2.0.5"
 FW_PACKAGE_MAINTAINER="Paul Mineiro <paul-fw@mineiro.com>"
 FW_PACKAGE_SHORT_DESCRIPTION="Mnesia schema discovery service."
 FW_PACKAGE_DESCRIPTION="`cat README`"
@@ -14,11 +14,14 @@ FW_PACKAGE_ARCHITECTURE_DEPENDENT="0"
 # 
 # For other packaging systems, the syntax is translated for you.
 
-FW_PACKAGE_DEPENDS="gencron, combonodefinder"
+FW_PACKAGE_DEPENDS="appinspect, gencron, combonodefinder"
 FW_PACKAGE_CONFLICTS="delirium, n54-service-erlang (<< 1.0.18)"
 FW_PACKAGE_PROVIDES="delirium"
 
-FW_PACKAGE_BUILD_DEPENDS="gencron, n54-dupload-conf, combonodefinder"
+FW_PACKAGE_BUILD_DEPENDS="appinspect, 
+                          combonodefinder,
+                          gencron,
+                          n54-dupload-conf"
 FW_PACKAGE_BUILD_CONFLICTS=""
 
 FW_SUBVERSION_TAG_ROOT="https://schemafinder.googlecode.com/svn/tags/schemafinder"

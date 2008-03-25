@@ -1,3 +1,5 @@
+ERLCFLAGS = $(FW_ERLCFLAGS) @APPINSPECT@
+
 dist_erlappsrc_DATA = 		\
   $(wildcard *.erl)		\
   mnesia_dumper.erl		\
