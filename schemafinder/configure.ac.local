@@ -12,7 +12,7 @@ AC_PATH_PROG([PATCH], [patch], [none])
 test "x$PATCH" = xnone && AC_MSG_ERROR([can't find patch])
 
 FW_TEMPLATE_ERLANG_CHECK_MODULE([appinspect], 
-                                [APPINSPECT="-D HAVE_APPINSPECT=1"],
+                                [APPINSPECT="-DHAVE_APPINSPECT=1"],
 				[APPINSPECT=""])
 
 AC_SUBST([APPINSPECT])

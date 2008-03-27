@@ -1,4 +1,5 @@
 ERLCFLAGS = $(FW_ERLCFLAGS) @APPINSPECT@
+DIALYZERFLAGS = @APPINSPECT@
 
 dist_erlappsrc_DATA = 		\
   $(wildcard *.erl)		\
