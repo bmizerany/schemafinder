@@ -200,9 +200,9 @@ sanctify (Node) ->
 %-=====================================================================-
 
 inspect () ->
-  [ { delirium, [ mnesia:dirty_read ({ delirium, K }) || 
-                  K <- mnesia:dirty_all_keys (delirium) ] } ].
-
+  [ { delirium,
+      lists:flatten ([ mnesia:dirty_read ({ delirium, K })
+		       || K <- mnesia:dirty_all_keys (delirium) ]) } ].  
 -endif.
 
 %-=====================================================================-
