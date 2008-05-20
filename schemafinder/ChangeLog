@@ -1,5 +1,7 @@
-Version 2.0.6 [NOT YET RELEASED]
+Version 2.0.6
   * slight change in appinspect output for better display
+  * foreign key bugfix
+  (http://www.erlang.org/pipermail/erlang-bugs/2008-May/000797.html)
 
 Version 2.0.5
   * appinspect hooks

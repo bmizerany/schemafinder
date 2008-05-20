@@ -46,6 +46,19 @@ start (_Type, _Args) ->
                                                  max_extra_db_delay_sec),
 
   { ok, Group } = application:get_env (schemafinder, group),
+  { ok, ForeignKeyBugFix } = application:get_env (schemafinder,
+                                                  foreign_key_bugfix),
+
+  case ForeignKeyBugFix of
+    true ->
+      error_logger:info_msg ("loading foreign key bugfix (true)~n", []),
+      load_foreign_key_bugfix ();
+    false ->
+      ok;
+    auto_detect ->
+      maybe_load_foreign_key_bugfix ()
+  end,
+
   MyGroup = list_to_atom ("schemafinder_" ++ atom_to_list (Group)),
 
   NodeFinder:discover (),
@@ -84,4 +97,38 @@ stop (_State) ->
       { atomic, ok } = delirium:immortalize_remote ();
     false ->
       ok = delirium:detach ()
+  end.
+
+%-=====================================================================-
+%-                               Private                               -
+%-=====================================================================-
+
+have_foreign_key_bug () ->
+  { value, { attributes, Attr } } =
+     lists:keysearch (attributes, 1, mnesia_frag:module_info ()),  
+
+  case lists:keysearch (vsn, 1, Attr) of    
+    { value, { vsn, [ "mnesia_4.3.5" ] } } ->
+      true;
+    _ ->
+      false
+  end.
+
+load_foreign_key_bugfix () ->
+  ok = code:unstick_dir (code:lib_dir (mnesia)),
+  true = code:soft_purge (mnesia_frag),
+  case code:lib_dir (schemafinder) of
+    { error, bad_name } -> % testing, hopefully
+      { module, mnesia_frag } = code:load_file (mnesia_frag);
+    Dir ->
+      { module, mnesia_frag } = code:load_abs (Dir ++ "/ebin/mnesia_frag")
+  end.
+
+maybe_load_foreign_key_bugfix () ->
+  case have_foreign_key_bug () of
+    true ->
+      error_logger:info_msg ("foreign key bug detected, loading fix~n", []),
+      load_foreign_key_bugfix ();
+    false ->
+      error_logger:info_msg ("foreign key bug not detected~n", [])
   end.

@@ -35,7 +35,8 @@ FW_ERL_APP_ENVIRONMENT="[ { node_finder, combonodefinder },
                           { group, default },
                           { check_interval_secs, 60 }, 
                           { node_timeout_secs, 900 },
-                          { load_timeout_ms, 5000 } ]"
+                          { load_timeout_ms, 5000 },
+                          { foreign_key_bugfix, auto_detect } ]"
 
 FW_ERL_PREREQ_APPLICATIONS_EXTRA=combonodefinder
 FW_ERL_APP_EXTRA="{ included_applications, [ mnesia ] }"

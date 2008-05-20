@@ -4,6 +4,7 @@ DIALYZERFLAGS = @APPINSPECT@
 dist_erlappsrc_DATA = 		\
   $(wildcard *.erl)		\
   mnesia_dumper.erl		\
+  mnesia_frag.erl		\
   mnesia_schema.erl
 
 dist_erlappinclude_DATA =	\
@@ -30,9 +31,13 @@ check_DATA =			\
 mnesia_dumper_ERLCFLAGS =	\
   -I @MNESIALOC@
 
+mnesia_frag_ERLCFLAGS =		\
+  -I @MNESIALOC@
+
 mnesia_schema_ERLCFLAGS =	\
   -I @MNESIALOC@
 
 CLEANFILES += 			\
   mnesia_dumper.erl		\
+  mnesia_frag.erl		\
   mnesia_schema.erl

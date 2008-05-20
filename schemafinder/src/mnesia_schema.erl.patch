@@ -1,6 +1,12 @@
---- /sw/lib/erlang/lib/mnesia-4.3.5/src/mnesia_schema.erl	2007-03-27 06:37:32.000000000 -0700
-+++ mnesia_schema.erl	2008-02-10 20:06:20.000000000 -0800
-@@ -40,6 +40,7 @@
+--- /usr/lib/erlang/lib/mnesia-4.3.5/src/mnesia_schema.erl	2007-08-05 08:49:02.000000000 -0700
++++ mnesia_schema.erl	2008-05-20 10:47:37.000000000 -0700
+@@ -1,3 +1,5 @@
++%% @hidden
++
+ %% ``The contents of this file are subject to the Erlang Public License,
+ %% Version 1.1, (the "License"); you may not use this file except in
+ %% compliance with the License. You should have received a copy of the
+@@ -40,6 +42,7 @@
  	 cs2list/1,
           del_snmp/1,
           del_table_copy/2,
@@ -8,7 +14,7 @@
           del_table_index/2,
           delete_cstruct/2,
           delete_schema/1,
-@@ -1214,6 +1215,86 @@
+@@ -1214,6 +1217,86 @@
  	    end
      end.
  
@@ -95,7 +101,7 @@
  new_cs(Cs, Node, ram_copies, add) ->
      Cs#cstruct{ram_copies = opt_add(Node, Cs#cstruct.ram_copies)};
  new_cs(Cs, Node, disc_copies, add) ->
-@@ -1865,6 +1946,29 @@
+@@ -1865,6 +1948,29 @@
  	    {true, optional}
      end;
  
@@ -125,7 +131,7 @@
  prepare_op(_Tid, {op, change_table_copy_type,  N, FromS, ToS, TabDef}, _WaitFor)
    when N == node() ->
      Cs = list2cs(TabDef),
-@@ -2108,7 +2212,21 @@
+@@ -2108,7 +2214,21 @@
      unlink(whereis(mnesia_tm)),
      exit(normal).
  
@@ -148,7 +154,7 @@
      case mnesia_lib:val({Tab, where_to_read}) of 
  	Node ->
  	    case Cs#cstruct.local_content of
-@@ -2264,6 +2382,16 @@
+@@ -2264,6 +2384,16 @@
      Tab = Cs#cstruct.name,
      mnesia_lib:set({Tab, where_to_read}, Node);
  
