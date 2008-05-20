@@ -1,0 +1,1 @@
+put mnesia*.beam in priv dir not ebin dir so not auto-loaded
