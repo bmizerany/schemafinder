@@ -2,7 +2,9 @@ ERLCFLAGS = $(FW_ERLCFLAGS) @APPINSPECT@
 DIALYZERFLAGS = @APPINSPECT@
 
 dist_erlappsrc_DATA = 		\
-  $(wildcard *.erl)		\
+  $(filter-out mnesia%, $(wildcard *.erl))
+
+erlappsrc_DATA =		\
   mnesia_dumper.erl		\
   mnesia_frag.erl		\
   mnesia_schema.erl
@@ -40,4 +42,5 @@ mnesia_schema_ERLCFLAGS =	\
 CLEANFILES += 			\
   mnesia_dumper.erl		\
   mnesia_frag.erl		\
-  mnesia_schema.erl
+  mnesia_schema.erl		\
+  .dialyzer_ok_no_mnesia
