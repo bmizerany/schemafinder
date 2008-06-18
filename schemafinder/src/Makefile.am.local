@@ -15,9 +15,9 @@ dist_erlappinclude_DATA =	\
 dist_erlapppriv_DATA =		\
   $(wildcard *.erl.patch)
 
-erlappebin_SCRIPTS =					\
-  @FW_PACKAGE_NAME@.app					\
-  $(patsubst %.erl, %.beam, $(dist_erlappsrc_DATA))
+erlappebin_SCRIPTS =							\
+  @FW_PACKAGE_NAME@.app							\
+  $(patsubst %.erl, %.beam, $(dist_erlappsrc_DATA) $(erlappsrc_DATA))
 
 .dialyzer_ok_no_mnesia: $(filter-out mnesia%, $(wildcard *.erl))
 	dialyzer --src -c $^
