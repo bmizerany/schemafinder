@@ -42,7 +42,11 @@ init ([ MaxExtraDbDelay, Group ]) ->
 
   Nodes = lists:usort ([ node (P) || P <- pg2:get_members (Group) ]),
 
-  { ok, _ } = mnesia:change_config (extra_db_nodes, Nodes),
+  case Nodes -- mnesia:system_info (db_nodes) of
+    [] -> ok;
+    Extra -> { ok, _ } = mnesia:change_config (extra_db_nodes, Extra)
+  end,
+
   case mnesia:change_table_copy_type (schema, node (), disc_copies) of
     { atomic, ok } -> ok;
     { aborted, { already_exists, schema, _, disc_copies } } -> ok
