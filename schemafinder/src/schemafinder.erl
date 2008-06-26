@@ -14,6 +14,7 @@
 
 start () ->
   combonodefinder:start (),
+  n54etsbugfix:start (),
   application:start (schemafinder).
 
 stop () ->

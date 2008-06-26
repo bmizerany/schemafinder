@@ -112,9 +112,13 @@ bury (Node) ->
     (fun () -> mnesia:write (#delirium{ node = Node, status = buried }) end).
 
 ensure_table (TableName, TabDef, LoadTimeout) ->
-  case mnesia:create_table (TableName, TabDef) of
-    { atomic, ok } -> true;
-    { aborted, { already_exists, TableName } } -> false
+  try mnesia:table_info (TableName, type)
+  catch
+    _ : _ ->
+     case mnesia:create_table (TableName, TabDef) of
+       { atomic, ok } -> true;
+       { aborted, { already_exists, TableName } } -> false
+     end
   end,
   case mnesia:wait_for_tables ([ TableName ], LoadTimeout) of
     ok -> true;
@@ -122,9 +126,13 @@ ensure_table (TableName, TabDef, LoadTimeout) ->
   end.
 
 ensure_table_copy (TableName, Node, CopyType) ->
-  case mnesia:add_table_copy (TableName, Node, CopyType) of
-    { atomic, ok } -> true;
-    { aborted, { already_exists, TableName, Node } } -> false
+  case lists:member (node (), mnesia:table_info (TableName, CopyType)) of
+    true -> true;
+    false ->
+      case mnesia:add_table_copy (TableName, Node, CopyType) of
+        { atomic, ok } -> true;
+        { aborted, { already_exists, TableName, Node } } -> false
+      end
   end.
 
 ensure_delirium_table (LoadTimeout) ->

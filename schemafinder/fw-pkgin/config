@@ -14,14 +14,14 @@ FW_PACKAGE_ARCHITECTURE_DEPENDENT="0"
 # 
 # For other packaging systems, the syntax is translated for you.
 
-FW_PACKAGE_DEPENDS="appinspect, gencron, combonodefinder, mnesia"
+FW_PACKAGE_DEPENDS="appinspect, gencron, combonodefinder, n54etsbugfix"
 FW_PACKAGE_CONFLICTS="delirium, n54-service-erlang (<< 1.0.18)"
 FW_PACKAGE_PROVIDES="delirium"
 
 FW_PACKAGE_BUILD_DEPENDS="appinspect, 
                           combonodefinder,
                           gencron,
-                          mnesia,
+                          n54etsbugfix,
                           n54-dupload-conf"
 FW_PACKAGE_BUILD_CONFLICTS=""
 
@@ -39,5 +39,5 @@ FW_ERL_APP_ENVIRONMENT="[ { node_finder, combonodefinder },
                           { load_timeout_ms, 5000 },
                           { foreign_key_bugfix, auto_detect } ]"
 
-FW_ERL_PREREQ_APPLICATIONS_EXTRA="combonodefinder"
+FW_ERL_PREREQ_APPLICATIONS_EXTRA="combonodefinder, n54etsbugfix"
 FW_ERL_APP_EXTRA="{ included_applications, [ mnesia ] }"
