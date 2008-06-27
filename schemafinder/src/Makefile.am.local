@@ -26,9 +26,12 @@ erlappebin_SCRIPTS =							\
 check_DATA =			\
   .dialyzer_ok_no_mnesia
 
-%.erl: %.erl.patch
-	@cp @MNESIALOC@/$*.erl .
-	@patch $*.erl $*.erl.patch
+%.erl.tmp: %.erl.patch
+	@cp @MNESIALOC@/$*.erl $*.erl.tmp
+	@patch $*.erl.tmp $*.erl.patch
+
+%.erl: %.erl.tmp
+	@head -5 $*.erl.tmp | grep '^%% @hidden' >/dev/null 2>/dev/null; if test $$? != 0; then { echo "%% @hidden"; cat $*.erl.tmp; } > $*.erl; else cp $*.erl.tmp $*.erl; fi
 
 mnesia_dumper_ERLCFLAGS =	\
   -I @MNESIALOC@
@@ -43,4 +46,7 @@ CLEANFILES += 			\
   mnesia_dumper.erl		\
   mnesia_frag.erl		\
   mnesia_schema.erl		\
-  .dialyzer_ok_no_mnesia
+  .dialyzer_ok_no_mnesia	\
+  $(wildcard *.orig)		\
+  $(wildcard *.rej)		\
+  $(wildcard *.tmp)
