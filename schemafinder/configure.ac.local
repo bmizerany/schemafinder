@@ -16,3 +16,15 @@ FW_TEMPLATE_ERLANG_CHECK_MODULE([appinspect],
 				[APPINSPECT=""])
 
 AC_SUBST([APPINSPECT])
+
+FW_TEMPLATE_ERLANG_CHECK_MODULE([mnesia_ext],
+                                [HAVE_MNESIA_EXT="yes"; MNESIA_EXT="-DMNESIA_EXT=1"],
+                                [HAVE_MNESIA_EXT="no"])
+
+FW_SUBST_PROTECT([HAVE_MNESIA_EXT])
+FW_SUBST_PROTECT([MNESIA_EXT])
+
+if test "$HAVE_MNESIA_EXT" = yes
+  then
+    AC_MSG_NOTICE([mnesia storage api extensions detected])
+  fi

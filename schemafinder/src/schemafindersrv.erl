@@ -15,6 +15,12 @@
            terminate/2,
            code_change/3]).
 
+-ifdef (MNESIA_EXT).
+-define (if_mnesia_ext (X, Y), X).
+-else.
+-define (if_mnesia_ext (X, Y), Y).
+-endif.
+
 -record (state, {}).
 
 %-=====================================================================-
@@ -49,7 +55,7 @@ init ([ MaxExtraDbDelay, Group ]) ->
     _ -> { ok, _ } = mnesia:change_config (extra_db_nodes, Extra)
   end,
 
-  case mnesia:change_table_copy_type (schema, node (), disc_copies) of
+  case fast_change_table_copy_type (schema, node (), disc_copies) of
     { atomic, ok } -> ok;
     { aborted, { already_exists, schema, _, disc_copies } } -> ok
   end,
@@ -82,6 +88,30 @@ code_change (_OldVsn, State, _Extra) -> { ok, State }.
 %-=====================================================================-
 %-                               Private                               -
 %-=====================================================================-
+
+fast_change_table_copy_type (TableName, Node, CopyType) ->
+  try { lists:member (Node, used_nodes (TableName)),
+        lists:member (Node, used_nodes (TableName, CopyType)) } of
+    { true, true } ->
+      { aborted, { already_exists, TableName, Node, CopyType } };
+    { true, false } ->
+      mnesia:change_table_copy_type (TableName, Node, CopyType);
+    { false, _ } ->
+      { aborted, { no_exists, TableName, Node } }
+  catch 
+    _ : _ ->
+      { aborted, { no_exists, TableName } }
+  end.
+
+used_nodes (TableName) ->
+  lists:usort (used_nodes (TableName, ram_copies) ++
+               used_nodes (TableName, disc_copies) ++
+               ?if_mnesia_ext (used_nodes (TableName, external_copies),
+                               []) ++
+               used_nodes (TableName, disc_only_copies)).
+
+used_nodes (TableName, CopyType) ->
+  mnesia:table_info (TableName, CopyType).
 
 wait_for_extra_db_nodes (_, 0) -> 
   failed;

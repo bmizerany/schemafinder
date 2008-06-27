@@ -15,6 +15,12 @@
 
 -include ("delirium.hrl").
 
+-ifdef (MNESIA_EXT).
+-define (if_mnesia_ext (X, Y), X).
+-else.
+-define (if_mnesia_ext (X, Y), Y).
+-endif.
+
 -define (is_timeout (X), (((X) =:= infinity) or
                           (is_integer (X) andalso (X > 0)))).
 
@@ -112,13 +118,9 @@ bury (Node) ->
     (fun () -> mnesia:write (#delirium{ node = Node, status = buried }) end).
 
 ensure_table (TableName, TabDef, LoadTimeout) ->
-  try mnesia:table_info (TableName, type)
-  catch
-    _ : _ ->
-     case mnesia:create_table (TableName, TabDef) of
-       { atomic, ok } -> true;
-       { aborted, { already_exists, TableName } } -> false
-     end
+  case fast_create_table (TableName, TabDef) of
+    { atomic, ok } -> true;
+    { aborted, { already_exists, TableName } } -> false
   end,
   case mnesia:wait_for_tables ([ TableName ], LoadTimeout) of
     ok -> true;
@@ -126,13 +128,9 @@ ensure_table (TableName, TabDef, LoadTimeout) ->
   end.
 
 ensure_table_copy (TableName, Node, CopyType) ->
-  case lists:member (node (), mnesia:table_info (TableName, CopyType)) of
-    true -> true;
-    false ->
-      case mnesia:add_table_copy (TableName, Node, CopyType) of
-        { atomic, ok } -> true;
-        { aborted, { already_exists, TableName, Node } } -> false
-      end
+  case fast_add_table_copy (TableName, Node, CopyType) of
+    { atomic, ok } -> true;
+    { aborted, { already_exists, TableName, Node } } -> false
   end.
 
 ensure_delirium_table (LoadTimeout) ->
@@ -183,3 +181,30 @@ expire_old_nodes (NodeTimeout) ->
   after
     global:del_lock ({ ?MODULE, self () })
   end.
+
+fast_add_table_copy (TableName, Node, CopyType) ->
+  try lists:member (Node, used_nodes (TableName)) of
+    true -> { aborted, { already_exists, TableName, Node } };
+    false -> mnesia:add_table_copy (TableName, Node, CopyType)
+  catch
+    _ : _ ->
+      { aborted, { no_exists, TableName } }
+  end.
+
+fast_create_table (TableName, TabDef) ->
+  try mnesia:table_info (TableName, type),
+      { aborted, { already_exists, TableName } }
+  catch
+    _ : _ ->
+      mnesia:create_table (TableName, TabDef)
+  end.
+
+used_nodes (TableName) ->
+  lists:usort (used_nodes (TableName, ram_copies) ++
+               used_nodes (TableName, disc_copies) ++
+               ?if_mnesia_ext (used_nodes (TableName, external_copies),
+                               []) ++
+               used_nodes (TableName, disc_only_copies)).
+
+used_nodes (TableName, CopyType) ->
+  mnesia:table_info (TableName, CopyType).
