@@ -1,6 +1,10 @@
-Version 2.0.7 [ NOT YET RELEASED ]
+Version 2.0.8 [ NYR ]
+  * add mnesiaex dependency
+
+Version 2.0.7
   * only distribute patches, not patched files
   * avoid schema transactions when possible
+  * mnesiaex support
 
 Version 2.0.6
   * slight change in appinspect output for better display

@@ -1,9 +1,13 @@
 dnl -- include additional autoconf commands here
 dnl -- do not include AC_OUTPUT, this is called for you
 
-MNESIALOC=`ERL_CRASH_DUMP=/dev/null erl -noinput -noshell -eval 'io:format ("~p/src", [[ code:lib_dir (mnesia) ]]).' -s erlang halt`
+AC_MSG_CHECKING([for mnesia location...])
+
+MNESIALOC=`ERL_CRASH_DUMP=/dev/null erl -noinput -noshell -eval 'io:format ("~s/src", [[ code:lib_dir (mnesia) ]]).' -s erlang halt`
 
 test $? = 0 || AC_MSG_ERROR([cant find mnesia installation])
+
+AC_MSG_RESULT([$MNESIALOC])
 
 FW_SUBST_PROTECT([MNESIALOC])
 
