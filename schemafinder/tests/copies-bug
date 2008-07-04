@@ -8,6 +8,8 @@ export ERL_CRASH_DUMP
 # and disc_only_copies list is not cleaned up when the schema is removed from
 # a node; disc_copies do not exhibit the bug.
 
+# NB: this bug has been fixed now.
+
 pid=$$
 cook=mega$$
 
@@ -77,6 +79,8 @@ trap 'exit 1;' INT HUP QUIT TERM
 rm -rf Mnesia*flassy*
 rm -rf Mnesia*turgy*
 
+{
+
 set -e
 
 start_bg_node flassy$pid
@@ -133,6 +137,7 @@ erl -pa ../src -setcookie $cook -sname warezy$pid -noshell -noinput -eval '
   ok = net_kernel:monitor_nodes (true),
   stopped = rpc:call (Turgy, mnesia, stop, []),
   % this works fine if mnesia:del_table_copy is used
+  % { atomic, ok } = rpc:call (Flassy, mnesia, del_table_copy, [ schema, Turgy ]),
   { atomic, ok } = rpc:call (Flassy, mnesia_schema, del_table_copies, [ schema, [ Turgy ] ]),
   [ Flassy ] = lists:sort (rpc:call (Flassy,
                                      mnesia,
@@ -161,4 +166,6 @@ erl -pa ../src -setcookie $cook -sname warezy$pid -noshell -noinput -eval '
       halt (1)
   end,
   ok
-' -s erlang halt -extra flassy$pid turgy$pid
+' -s erlang halt -extra flassy$pid turgy$pid 
+
+} > copies-bug.out

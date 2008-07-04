@@ -1,5 +1,5 @@
-Version 2.0.8 [ NYR ]
-  * add mnesiaex dependency
+Version 2.0.8 
+  * fixed "copies list cleanup bug" (see tests/copies-bug)
 
 Version 2.0.7
   * only distribute patches, not patched files

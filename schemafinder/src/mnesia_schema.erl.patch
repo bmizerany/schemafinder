@@ -1,5 +1,5 @@
 --- /usr/lib/erlang/lib/mnesia-4.3.5/src/mnesia_schema.erl	2007-08-05 08:49:02.000000000 -0700
-+++ ./mnesia_schema.erl	2008-06-26 13:44:24.000000000 -0700
++++ mnesia_schema.erl	2008-07-04 03:05:53.000000000 -0700
 @@ -40,6 +40,7 @@
  	 cs2list/1,
           del_snmp/1,
@@ -8,7 +8,7 @@
           del_table_index/2,
           delete_cstruct/2,
           delete_schema/1,
-@@ -1214,6 +1215,86 @@
+@@ -1214,6 +1215,81 @@
  	    end
      end.
  
@@ -55,47 +55,42 @@
 +remove_nodes_from_tabs([schema|Rest], NStorList) ->
 +    remove_nodes_from_tabs(Rest, NStorList);
 +remove_nodes_from_tabs([Tab|Rest], NStorList) ->    
-+    {Cs, IsFragModified} = 
-+	lists:foldl(fun({Node, _}, {AccCs, AccIsFragModified}) ->
-+			    {NewCs, NewFM} = mnesia_frag:remove_node(Node, 
-+								     AccCs),
-+			    {NewCs, NewFM or AccIsFragModified}
-+		    end,
-+		    {incr_version(val({Tab, cstruct})), false},
-+		    NStorList),
++    Cs = incr_version(val({Tab, cstruct})),
++    {Cs2, DelNodes} = 
++	lists:foldl
++           (fun({Node, _}, {AccCs, AccDelNodes}) ->
++                {NewCs, FM} = mnesia_frag:remove_node(Node, AccCs),
++                case mnesia_lib:schema_cs_to_storage_type(Node, NewCs) of
++                  unknown ->
++                      case FM of
++                          true ->
++                              {NewCs, [Node|AccDelNodes]};
++                          false ->
++                              {NewCs, AccDelNodes}
++                      end;
++                  Storage ->
++                      {new_cs(NewCs, Node, Storage, del), AccDelNodes}
++                end
++            end,
++            {Cs, []},
++            NStorList),
 +
-+    case lists:any (fun ({ _, X }) -> X =/= unknown end, NStorList) of
-+	false ->
-+	    case IsFragModified of
-+		true ->
-+		    [{op, change_table_frag, {del_node, N}, cs2list(Cs)} ||
-+		      {N, _} <- NStorList] ++
-+		     remove_nodes_from_tabs(Rest, NStorList);
-+		false ->
-+		    remove_nodes_from_tabs(Rest, NStorList)
-+	    end;
-+	true ->
-+	     Cs2 = lists:foldl(fun({_, unknown}, Acc) -> Acc;
-+				  ({Node, Storage}, Acc) ->
-+				    new_cs(Acc, Node, Storage, del)
-+			       end,
-+			       Cs,
-+			       NStorList),
-+	    case mnesia_lib:cs_to_nodes(Cs2) of
-+		[] ->
-+		    [{op, delete_table, cs2list(Cs)} |
-+		     remove_nodes_from_tabs(Rest, NStorList)];
-+		_Ns ->
-+		    verify_cstruct(Cs2),
-+		    [{op, del_table_copies, NStorList, cs2list(Cs2)}|
-+		     remove_nodes_from_tabs(Rest, NStorList)]
-+	    end
++    case mnesia_lib:cs_to_nodes(Cs2) of
++        [] ->
++            [{op, delete_table, cs2list(Cs)} |
++             remove_nodes_from_tabs(Rest, NStorList)];
++        _Ns ->
++            verify_cstruct(Cs2),
++            [{op, change_table_frag, {del_node, N}, cs2list(Cs)}
++             || N <- DelNodes] ++
++            [{op, del_table_copies, NStorList, cs2list(Cs2)}|
++             remove_nodes_from_tabs(Rest, NStorList)]
 +    end.
 +
  new_cs(Cs, Node, ram_copies, add) ->
      Cs#cstruct{ram_copies = opt_add(Node, Cs#cstruct.ram_copies)};
  new_cs(Cs, Node, disc_copies, add) ->
-@@ -1865,6 +1946,29 @@
+@@ -1865,6 +1941,29 @@
  	    {true, optional}
      end;
  
@@ -125,7 +120,7 @@
  prepare_op(_Tid, {op, change_table_copy_type,  N, FromS, ToS, TabDef}, _WaitFor)
    when N == node() ->
      Cs = list2cs(TabDef),
-@@ -2108,7 +2212,21 @@
+@@ -2108,7 +2207,21 @@
      unlink(whereis(mnesia_tm)),
      exit(normal).
  
@@ -148,7 +143,7 @@
      case mnesia_lib:val({Tab, where_to_read}) of 
  	Node ->
  	    case Cs#cstruct.local_content of
-@@ -2264,6 +2382,16 @@
+@@ -2264,6 +2377,16 @@
      Tab = Cs#cstruct.name,
      mnesia_lib:set({Tab, where_to_read}, Node);
  

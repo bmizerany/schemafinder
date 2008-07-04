@@ -14,15 +14,19 @@ FW_PACKAGE_ARCHITECTURE_DEPENDENT="0"
 # 
 # For other packaging systems, the syntax is translated for you.
 
-FW_PACKAGE_DEPENDS="appinspect, gencron, combonodefinder, mnesia, n54etsbugfix"
+#                    mnesia,
+FW_PACKAGE_DEPENDS="appinspect,
+                    combonodefinder,
+                    gencron,
+                    n54etsbugfix"
 FW_PACKAGE_CONFLICTS="delirium, n54-service-erlang (<< 1.0.18)"
 FW_PACKAGE_PROVIDES="delirium"
 
+#                          mnesia,
+#                          mnesiaexplt,
 FW_PACKAGE_BUILD_DEPENDS="appinspect, 
                           combonodefinder,
                           gencron,
-                          mnesia,
-                          mnesiaexplt,
                           n54etsbugfix,
                           n54-dupload-conf"
 FW_PACKAGE_BUILD_CONFLICTS=""

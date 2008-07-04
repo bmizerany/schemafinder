@@ -4,7 +4,8 @@ TESTS =			\
   test-schemafinder-tft	\
   test-schemafinder-ttf	\
   test-schemafinder-ttt	\
-  test-disaster
+  test-disaster		\
+  copies-bug
 
 clean-local:
 	-rm -rf Mnesia*

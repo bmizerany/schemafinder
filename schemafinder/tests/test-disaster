@@ -24,6 +24,9 @@ cleanup () \
     rm -rf Mnesia*inviso*
   }
 
+trap 'cleanup;' EXIT
+trap 'exit 1;' INT QUIT TERM HUP
+
 start_bg_node () \
   {
     erl -pa ../src -setcookie $cook -sname "$1" -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder $2 -noshell -noinput -eval '
@@ -56,7 +59,7 @@ wait_for_node () \
       MRef = erlang:monitor (process, Pid),
       Pid ! { self (), ruthere },
       ok = receive imok -> ok; { 'DOWN', MRef, _, _, _ } -> flass end
-    ' -s erlang halt -extra "$1" || { cleanup; exit 1; }
+    ' -s erlang halt -extra "$1" || exit 1
   }
 
 {
@@ -113,7 +116,7 @@ erl -hidden -pa ../src -setcookie $cook -sname killah$pid -noshell -noinput -eva
   end,
   Warez = list_to_atom ("warezy" ++ Pid ++ "@" ++ Host),
   [ Warez ] = rpc:call (Warez, mnesia, system_info, [ db_nodes ])
-' -s erlang halt -extra $pid || { cleanup; exit 1; }
+' -s erlang halt -extra $pid || exit 1
 
 # now restart turgy
 
@@ -139,7 +142,7 @@ erl -pa ../src -setcookie $cook -sname flassy$pid -schemafinder node_finder node
   Node = node (),
   { aborted, { node_not_running, Node } } = 
     mnesia:add_table_copy (flass, node (), ram_copies)
-' -s erlang halt || { cleanup; exit 1; }
+' -s erlang halt || exit 1
 
 echo "****** subsequent errors are not expected ******"
 
@@ -157,8 +160,6 @@ erl -pa ../src -setcookie $cook -sname flassy$pid -schemafinder node_finder node
 ' -s erlang halt &
 
 wait_for_node flassy$pid
-
-cleanup
 
 } 2>&1 > test-disaster.out
 
