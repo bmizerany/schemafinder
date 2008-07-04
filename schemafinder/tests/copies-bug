@@ -1,0 +1,164 @@
+#! /bin/sh
+
+ERL_CRASH_DUMP=/dev/null
+export ERL_CRASH_DUMP
+
+# the purpose of this script is to demonstrate a bug in 
+# mnesia_schema:del_table_copies, wherein a tables' ram_copies 
+# and disc_only_copies list is not cleaned up when the schema is removed from
+# a node; disc_copies do not exhibit the bug.
+
+pid=$$
+cook=mega$$
+
+cleanup () \
+  {
+    erl -pa ../src -setcookie $cook -sname killah$pid -noshell -noinput -eval '
+      Pid = hd (init:get_plain_arguments ()),
+      Host = lists:last (string:tokens (atom_to_list (node ()), "@")),
+      rpc:call (list_to_atom ("flassy" ++ Pid ++ "@" ++ Host), erlang, halt, []),
+      rpc:call (list_to_atom ("turgy" ++ Pid ++ "@" ++ Host), erlang, halt, []),
+      rpc:call (list_to_atom ("warezy" ++ Pid ++ "@" ++ Host), erlang, halt, []),
+      rpc:call (list_to_atom ("inviso" ++ Pid ++ "@" ++ Host), erlang, halt, [])
+    ' -s erlang halt -extra $pid
+
+    rm -rf Mnesia*flassy*
+    rm -rf Mnesia*turgy*
+  }
+
+wait_for_node () \
+  {
+    erl -hidden -pa ../src -setcookie $cook -sname wazzup$pid      \
+        -noshell -noinput -eval '
+      receive after 1000 -> ok end,
+      Host = lists:last (string:tokens (atom_to_list (node ()), "@")),
+      Other = hd (init:get_plain_arguments ()),
+      pong = net_adm:ping (list_to_atom (Other ++ "@" ++ Host)),
+      While = fun (F, W) -> case F () of false -> ok; 
+                                         true -> receive after 1000 -> ok end,
+                                                 W (F, W)
+                            end
+              end,
+      While (fun () -> rpc:call (list_to_atom (Other ++ "@" ++ Host), erlang, whereis, [ hello ]) =:= undefined end, While),
+      Pid = rpc:call (list_to_atom (Other ++ "@" ++ Host), erlang, whereis, [ hello ]),
+      true = erlang:is_pid (Pid),
+      MRef = erlang:monitor (process, Pid),
+      Pid ! { self (), ruthere },
+      ok = receive imok -> ok; { 'DOWN', MRef, _, _, _ } -> flass end
+    ' -s erlang halt -extra "$1" || { cleanup; exit 1; }
+  }
+
+start_bg_node () \
+  {
+    erl -pa ../src -setcookie $cook -sname "$1" -noshell -noinput -eval '
+      true = register (hello, self ()),
+      ok = mnesia:start (),
+      case init:get_plain_arguments () of
+        [] -> ok;
+        [ Other ] -> 
+          Host = lists:last (string:tokens (atom_to_list (node ()), "@")),
+          Node = list_to_atom (Other ++ "@" ++ Host),
+          pong = net_adm:ping (Node),
+          { ok, _ } = mnesia:change_config (extra_db_nodes, [ Node ])
+      end,
+      { atomic, ok } = mnesia:change_table_copy_type (schema, 
+                                                      node (), 
+                                                      disc_copies),
+      receive { From, ruthere } -> From ! imok end,
+      receive after infinity -> ok end
+    ' -s erlang halt $2 &
+
+    wait_for_node "$1"
+  }
+
+trap 'cleanup;' EXIT
+trap 'exit 1;' INT HUP QUIT TERM
+
+rm -rf Mnesia*flassy*
+rm -rf Mnesia*turgy*
+
+set -e
+
+start_bg_node flassy$pid
+start_bg_node turgy$pid "-extra flassy$pid"
+
+erl -pa ../src -setcookie $cook -sname warezy$pid -noshell -noinput -eval '
+  Host = lists:last (string:tokens (atom_to_list (node ()), "@")),
+  Flassy = list_to_atom (hd (init:get_plain_arguments ()) ++ "@" ++ Host),
+  Turgy = list_to_atom (hd (tl (init:get_plain_arguments ())) ++ "@" ++ Host),
+  pong = net_adm:ping (Flassy),
+  pong = net_adm:ping (Turgy),
+  { atomic, ok } = 
+    rpc:call (Flassy, 
+              mnesia, 
+              create_table, 
+              [ flass,
+                [ { frag_properties, 
+                    [ { n_ram_copies, 2 },
+                      { n_fragments, 2 },
+                      { node_pool, [ Flassy, Turgy ] } ] } ] ]),
+  { atomic, ok } = 
+    rpc:call (Flassy, 
+              mnesia, 
+              create_table, 
+              [ turg,
+                [ { frag_properties, 
+                    [ { n_disc_copies, 2 },
+                      { n_fragments, 2 },
+                      { node_pool, [ Flassy, Turgy ] } ] } ] ]),
+  { atomic, ok } = 
+    rpc:call (Flassy, 
+              mnesia, 
+              create_table, 
+              [ sweet,
+                [ { frag_properties, 
+                    [ { n_disc_only_copies, 2 },
+                      { n_fragments, 2 },
+                      { node_pool, [ Flassy, Turgy ] } ] } ] ]),
+
+  [ Flassy, Turgy ] = lists:sort (rpc:call (Flassy,
+                                            mnesia,
+                                            table_info, 
+                                            [ sweet, disc_only_copies ])),
+
+  [ Flassy, Turgy ] = lists:sort (rpc:call (Flassy,
+                                            mnesia,
+                                            table_info, 
+                                            [ turg, disc_copies ])),
+
+  [ Flassy, Turgy ] = lists:sort (rpc:call (Flassy,
+                                            mnesia,
+                                            table_info, 
+                                            [ flass, ram_copies ])),
+  ok = net_kernel:monitor_nodes (true),
+  stopped = rpc:call (Turgy, mnesia, stop, []),
+  % this works fine if mnesia:del_table_copy is used
+  { atomic, ok } = rpc:call (Flassy, mnesia_schema, del_table_copies, [ schema, [ Turgy ] ]),
+  [ Flassy ] = lists:sort (rpc:call (Flassy,
+                                     mnesia,
+                                     table_info, 
+                                     [ turg, disc_copies ])),
+  try
+    [ Flassy ] = lists:sort (rpc:call (Flassy,
+                                       mnesia,
+                                       table_info, 
+                                       [ sweet, disc_only_copies ]))
+  catch
+    A : B ->
+      io:format ("sweet disc_only_copies list is messed up: ~p ~n", [ { A, B } ]),
+      timer:sleep (500),
+      halt (1)
+  end,
+  try
+    [ Flassy ] = lists:sort (rpc:call (Flassy,
+                                       mnesia,
+                                       table_info, 
+                                       [ flass, ram_copies ]))
+  catch
+    X : Y ->
+      io:format ("flass ram_copies list is messed up: ~p ~n", [ { X, Y } ]),
+      timer:sleep (500),
+      halt (1)
+  end,
+  ok
+' -s erlang halt -extra flassy$pid turgy$pid
