@@ -1,3 +1,7 @@
+Version 2.1.0
+  * no_table_loaders proxy environment variable
+  * expire_old_nodes mnesia user event
+
 Version 2.0.8 
   * fixed "copies list cleanup bug" (see tests/copies-bug)
 

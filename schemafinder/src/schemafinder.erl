@@ -49,6 +49,9 @@ start (_Type, _Args) ->
   { ok, Group } = application:get_env (schemafinder, group),
   { ok, ForeignKeyBugFix } = application:get_env (schemafinder,
                                                   foreign_key_bugfix),
+  { ok, NoTableLoaders } = application:get_env (schemafinder, no_table_loaders),
+
+  application:set_env (mnesia, no_table_loaders, NoTableLoaders),
 
   case ForeignKeyBugFix of
     true ->

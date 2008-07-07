@@ -176,7 +176,8 @@ expire_old_nodes (NodeTimeout) ->
       [] ->
         ok;
       _ ->
-        { atomic, ok } = mnesia_schema:del_table_copies (schema, KillMe)
+        { atomic, ok } = mnesia_schema:del_table_copies (schema, KillMe),
+        ok = mnesia:report_event ({ expire_old_nodes, KillMe })
     end
   after
     global:del_lock ({ ?MODULE, self () })
