@@ -36,7 +36,7 @@ erl -pa ../src -sname schemafinder_test1 -s combonodefinder -eval '
   ok = application:load (App),
   application:set_env (schemafinder, reuse_schema, false),
   application:set_env (schemafinder, save_schema, false),
-  application:set_env (schemafinder, node_finder, nodefinder),
+  application:set_env (schemafinder, foreign_key_bugfix, false),
   schemafinder:start (),
   receive after 30000 -> ok end
 ' -noshell -noinput -s init stop &
@@ -48,7 +48,7 @@ erl -pa ../src -sname schemafinder_test2 -s combonodefinder -eval '
   ok = application:load (App),
   application:set_env (schemafinder, reuse_schema, true),
   application:set_env (schemafinder, save_schema, false),
-  application:set_env (schemafinder, node_finder, nodefinder),
+  application:set_env (schemafinder, foreign_key_bugfix, false),
   schemafinder:start (),
   receive after 30000 -> ok end
 ' -noshell -noinput -s init stop &
@@ -60,7 +60,7 @@ erl -pa ../src -sname schemafinder_test3 -s combonodefinder -eval '
   ok = application:load (App),
   application:set_env (schemafinder, reuse_schema, false),
   application:set_env (schemafinder, save_schema, true),
-  application:set_env (schemafinder, node_finder, nodefinder),
+  application:set_env (schemafinder, foreign_key_bugfix, false),
   schemafinder:start (),
   "schemafinder_test3@" ++ Host = atom_to_list (node ()),
   Other = list_to_atom ("schemafinder_test1@" ++ Host),
@@ -77,7 +77,7 @@ erl -pa ../src -sname schemafinder_test3 -s combonodefinder -eval '
   ok = application:load (App),
   application:set_env (schemafinder, reuse_schema, true),
   application:set_env (schemafinder, save_schema, false),
-  application:set_env (schemafinder, node_finder, nodefinder),
+  application:set_env (schemafinder, foreign_key_bugfix, false),
   schemafinder:start (),
   "schemafinder_test3@" ++ Host = atom_to_list (node ()),
   Other = list_to_atom ("schemafinder_test1@" ++ Host),

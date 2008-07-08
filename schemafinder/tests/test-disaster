@@ -4,6 +4,9 @@
 # EC2 nodes out of a pool of three, with an artarded operator
 # that doesn't delete the schema directory of a stale node.
 
+ERL_CRASH_DUMP=${ERL_CRASH_DUMP-/dev/null}
+export ERL_CRASH_DUMP
+
 pid=$$
 cook=mega$$
 
@@ -29,7 +32,7 @@ trap 'exit 1;' INT QUIT TERM HUP
 
 start_bg_node () \
   {
-    erl -pa ../src -setcookie $cook -sname "$1" -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder $2 -noshell -noinput -eval '
+    erl -pa ../src -setcookie $cook -sname "$1" -schemafinder foreign_key_bugfix false -s combonodefinder -s schemafinder $2 -noshell -noinput -eval '
       true = register (hello, self ()),
       { atomic, ok } = delirium:heartbeat (),
       true = lists:keymember (schemafinder, 1, application:which_applications ()),
@@ -75,7 +78,7 @@ start_bg_node inviso$pid '-schemafinder group flass'
 start_bg_node flassy$pid
 start_bg_node turgy$pid
 
-erl -pa ../src -setcookie $cook -sname warezy$pid -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
+erl -pa ../src -setcookie $cook -sname warezy$pid -s combonodefinder -schemafinder foreign_key_bugfix false -s schemafinder -noshell -noinput -eval '
   true = register (hello, self ()),
   { atomic, ok } = delirium:heartbeat (),
   true = lists:keymember (schemafinder, 1, application:which_applications ()),
@@ -122,7 +125,7 @@ erl -hidden -pa ../src -setcookie $cook -sname killah$pid -noshell -noinput -eva
 
 rm -rf Mnesia*turgy*
 
-erl -pa ../src -setcookie $cook -sname turgy$pid -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
+erl -pa ../src -setcookie $cook -sname turgy$pid -s combonodefinder -schemafinder foreign_key_bugfix false -s schemafinder -noshell -noinput -eval '
   true = register (hello, self ()),
   { atomic, ok } = delirium:heartbeat (),
   { atomic, ok } = mnesia:add_table_copy (flass, node (), ram_copies),
@@ -137,7 +140,7 @@ wait_for_node turgy$pid
 
 echo "****** the following error is expected ******"
 
-erl -pa ../src -setcookie $cook -sname flassy$pid -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
+erl -pa ../src -setcookie $cook -sname flassy$pid -s combonodefinder -schemafinder foreign_key_bugfix false -s schemafinder -noshell -noinput -eval '
   false = lists:keymember (schemafinder, 1, application:which_applications ()),
   Node = node (),
   { aborted, { node_not_running, Node } } = 
@@ -150,7 +153,7 @@ echo "****** subsequent errors are not expected ******"
 
 rm -rf Mnesia*flassy*
 
-erl -pa ../src -setcookie $cook -sname flassy$pid -schemafinder node_finder nodefinder -s combonodefinder -s schemafinder -noshell -noinput -eval '
+erl -pa ../src -setcookie $cook -sname flassy$pid -s combonodefinder -schemafinder foreign_key_bugfix false -s schemafinder -noshell -noinput -eval '
   true = register (hello, self ()),
   { atomic, ok } = delirium:heartbeat (),
   { atomic, ok } = mnesia:add_table_copy (flass, node (), ram_copies),

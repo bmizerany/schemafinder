@@ -26,7 +26,7 @@ erl -pa ../src -sname schemafinder_test1 -s combonodefinder -eval '
   ok = application:load (App),
   application:set_env (schemafinder, reuse_schema, true),
   application:set_env (schemafinder, save_schema, true),
-  application:set_env (schemafinder, node_finder, nodefinder),
+  application:set_env (schemafinder, foreign_key_bugfix, false),
   schemafinder:start (),
   { atomic, ok } = mnesia:create_table (flass, []),
   Self = node (),
@@ -40,7 +40,7 @@ erl -pa ../src -sname schemafinder_test1 -s combonodefinder -eval '
   ok = application:load (App),
   application:set_env (schemafinder, reuse_schema, true),
   application:set_env (schemafinder, save_schema, false),
-  application:set_env (schemafinder, node_finder, nodefinder),
+  application:set_env (schemafinder, foreign_key_bugfix, false),
   schemafinder:start (),
   Self = node (),
   [ Self ] = mnesia:table_info (flass, active_replicas)

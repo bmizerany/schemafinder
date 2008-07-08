@@ -2,7 +2,7 @@
 # environment variable FW_PACKAGE_DEFAULT_MAINTAINER if non-empty
 
 FW_PACKAGE_NAME="schemafinder"
-FW_PACKAGE_VERSION="2.1.1"
+FW_PACKAGE_VERSION="3.0.0"
 FW_PACKAGE_MAINTAINER="Paul Mineiro <paul-fw@mineiro.com>"
 FW_PACKAGE_SHORT_DESCRIPTION="Mnesia schema discovery service."
 FW_PACKAGE_DESCRIPTION="`cat README`"
@@ -14,19 +14,19 @@ FW_PACKAGE_ARCHITECTURE_DEPENDENT="0"
 # 
 # For other packaging systems, the syntax is translated for you.
 
-#                    mnesia,
 FW_PACKAGE_DEPENDS="appinspect,
                     combonodefinder,
                     gencron,
+                    mnesia,
                     n54etsbugfix"
 FW_PACKAGE_CONFLICTS="delirium, n54-service-erlang (<< 1.0.18)"
 FW_PACKAGE_PROVIDES="delirium"
 
-#                          mnesia,
-#                          mnesiaexplt,
 FW_PACKAGE_BUILD_DEPENDS="appinspect, 
                           combonodefinder,
                           gencron,
+                          mnesia,
+                          mnesiaexplt,
                           n54etsbugfix,
                           n54-dupload-conf"
 FW_PACKAGE_BUILD_CONFLICTS=""
