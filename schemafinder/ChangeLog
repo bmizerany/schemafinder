@@ -1,3 +1,6 @@
+Version 2.1.1
+  * increase node_timeout_secs, check_interval_secs, load_timeout_ms, discover_delay_ms
+
 Version 2.1.0
   * no_table_loaders proxy environment variable
   * expire_old_nodes mnesia user event

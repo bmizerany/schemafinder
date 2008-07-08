@@ -2,7 +2,7 @@
 # environment variable FW_PACKAGE_DEFAULT_MAINTAINER if non-empty
 
 FW_PACKAGE_NAME="schemafinder"
-FW_PACKAGE_VERSION="2.1.0"
+FW_PACKAGE_VERSION="2.1.1"
 FW_PACKAGE_MAINTAINER="Paul Mineiro <paul-fw@mineiro.com>"
 FW_PACKAGE_SHORT_DESCRIPTION="Mnesia schema discovery service."
 FW_PACKAGE_DESCRIPTION="`cat README`"
@@ -37,12 +37,12 @@ FW_ERL_APP_ENVIRONMENT="[ { node_finder, combonodefinder },
                           { reuse_schema, true },
                           { save_schema, true },
                           { solo_startup, true },
-                          { discover_delay_ms, 1000 },
+                          { discover_delay_ms, 5000 },
                           { max_extra_db_delay_sec, 10 },
                           { group, default },
-                          { check_interval_secs, 60 }, 
-                          { node_timeout_secs, 900 },
-                          { load_timeout_ms, 5000 },
+                          { check_interval_secs, 900 }, 
+                          { node_timeout_secs, 14400 },
+                          { load_timeout_ms, 30000 },
                           { foreign_key_bugfix, true },
                           { no_table_loaders, 100 } ]"
 
