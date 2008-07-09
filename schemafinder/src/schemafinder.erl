@@ -15,6 +15,7 @@
 start () ->
   combonodefinder:start (),
   n54etsbugfix:start (),
+  tcerl:start (),
   application:start (schemafinder).
 
 stop () ->

@@ -18,7 +18,8 @@ FW_PACKAGE_DEPENDS="appinspect,
                     combonodefinder,
                     gencron,
                     mnesia,
-                    n54etsbugfix"
+                    n54etsbugfix,
+                    tcerl"
 FW_PACKAGE_CONFLICTS="delirium, n54-service-erlang (<< 1.0.18)"
 FW_PACKAGE_PROVIDES="delirium"
 
@@ -28,7 +29,8 @@ FW_PACKAGE_BUILD_DEPENDS="appinspect,
                           mnesia,
                           mnesiaexplt,
                           n54etsbugfix,
-                          n54-dupload-conf"
+                          n54-dupload-conf,
+                          tcerl"
 FW_PACKAGE_BUILD_CONFLICTS=""
 
 FW_SUBVERSION_TAG_ROOT="https://schemafinder.googlecode.com/svn/tags/schemafinder"
@@ -46,5 +48,5 @@ FW_ERL_APP_ENVIRONMENT="[ { node_finder, combonodefinder },
                           { foreign_key_bugfix, true },
                           { no_table_loaders, 100 } ]"
 
-FW_ERL_PREREQ_APPLICATIONS_EXTRA="combonodefinder, n54etsbugfix"
+FW_ERL_PREREQ_APPLICATIONS_EXTRA="combonodefinder, n54etsbugfix, tcerl"
 FW_ERL_APP_EXTRA="{ included_applications, [ mnesia ] }"
