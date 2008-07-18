@@ -54,6 +54,10 @@ start (_Type, _Args) ->
 
   application:set_env (mnesia, no_table_loaders, NoTableLoaders),
 
+  { ok, MnesiaTmPrio } = application:get_env (schemafinder, mnesia_tm_prio),
+
+  application:set_env (mnesia, mnesia_tm_prio, MnesiaTmPrio),
+
   case ForeignKeyBugFix of
     true ->
       error_logger:info_msg ("loading foreign key bugfix (true)~n", []),

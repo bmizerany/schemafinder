@@ -46,7 +46,8 @@ FW_ERL_APP_ENVIRONMENT="[ { node_finder, combonodefinder },
                           { node_timeout_secs, 14400 },
                           { load_timeout_ms, 30000 },
                           { foreign_key_bugfix, true },
-                          { no_table_loaders, 100 } ]"
+                          { no_table_loaders, 100 },
+                          { mnesia_tm_prio, high } ]"
 
 FW_ERL_PREREQ_APPLICATIONS_EXTRA="combonodefinder, n54etsbugfix, tcerl"
 FW_ERL_APP_EXTRA="{ included_applications, [ mnesia ] }"
