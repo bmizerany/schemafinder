@@ -134,8 +134,10 @@ ensure_table_copy (TableName, Node, CopyType) ->
   end.
 
 ensure_delirium_table (LoadTimeout) ->
+  { ok, LoadOrder } = application:get_env (schemafinder, delirium_load_order),
   ensure_table (delirium, 
-                [ { type, set },
+                [ { load_order, LoadOrder },
+                  { type, set },
                   { disc_copies, mnesia:system_info (running_db_nodes) } ],
                 LoadTimeout),
   ensure_table_copy (delirium, node (), disc_copies).
