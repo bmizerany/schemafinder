@@ -2,7 +2,7 @@ Version 3.0.1
   * increase load order of delirium table
 
 Version 3.0.0
-  * build with mnesiaex
+  * (optionally) build with mnesiaex
 
 Version 2.1.1
   * increase node_timeout_secs, check_interval_secs, load_timeout_ms, discover_delay_ms
